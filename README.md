@@ -84,6 +84,20 @@ as hello_raw.s -o hello_raw.o
 ld hello_raw.o -o hello_raw.exe -lkernel32 -e _start
 ```
 
+## Phương pháp trích xuất dữ liệu
+
+Để đảm bảo tính khách quan và chính xác, các thông số về dung lượng và thời gian chạy được trích xuất trực tiếp bằng các công cụ lõi của hệ điều hành Windows thông qua PowerShell:
+
+- **Đo dung lượng file (File Size)**: Sử dụng lệnh `Get-Item` để lấy thuộc tính `Length` của file biên dịch (đo chính xác từng byte chiếm dụng trên ổ cứng).
+```powershell
+Get-Item hello_raw.exe, hello_c.exe, dist\hello_py.exe | Select-Object Name, Length
+```
+
+- **Đo tốc độ chạy (Execution Time)**: Sử dụng lệnh `Measure-Command`. Lệnh này hoạt động như một chiếc đồng hồ bấm giờ (stopwatch) nhằm tính tổng thời gian (Wall-clock time) thực tế mà hệ điều hành cần để: nạp file vào RAM, cấp phát bộ nhớ, thực thi mã lệnh, và dọn dẹp để thoát tiến trình.
+```powershell
+(Measure-Command { .\hello_raw.exe }).TotalMilliseconds
+```
+
 ## Bảng so sánh (Comparison)
 
 | Ngôn ngữ | Kích thước File (File Size) | Thời gian chạy (Execution Time) | Đánh giá |

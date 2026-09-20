@@ -1,0 +1,145 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+
+% Định nghĩa màu sắc cho các đoạn code
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\title{Báo Cáo: So Sánh Chương Trình ``Hello World'' Bằng Python, C Và Assembly}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Quá trình thực hiện}
+\begin{itemize}
+    \item \textbf{Viết mã nguồn}: 
+    Tạo 3 file mã nguồn \texttt{hello.py} (Python), \texttt{hello.c} (C), và \texttt{hello\_raw.s} (Assembly nguyên thủy - Pure Assembly).
+    
+    \item \textbf{Biên dịch thành file thực thi độc lập (.exe)}:
+    \begin{itemize}
+        \item \textbf{Python}: Sử dụng \texttt{PyInstaller} để đóng gói môi trường (\texttt{pyinstaller --onefile hello.py}).
+        \item \textbf{C}: Sử dụng trình biên dịch \texttt{gcc} (\texttt{gcc hello.c -o hello\_c.exe -O2}).
+        \item \textbf{Assembly}: Dùng \texttt{as} dịch thành object file và \texttt{ld} liên kết thẳng với API nhân hệ điều hành \texttt{kernel32.dll} (\texttt{as hello\_raw.s -o hello\_raw.o} và \texttt{ld hello\_raw.o -o hello\_raw.exe -lkernel32 -e \_start}).
+    \end{itemize}
+    
+    \item \textbf{Thử nghiệm và đo lường}: Chạy chương trình, đo kích thước file và thời gian thực thi bằng lệnh \texttt{Measure-Command} trong môi trường PowerShell.
+\end{itemize}
+
+\section{Mã nguồn}
+
+\subsection{Python (\texttt{hello.py})}
+\begin{lstlisting}[language=Python]
+print("hello world")
+\end{lstlisting}
+
+\subsection{C (\texttt{hello.c})}
+\begin{lstlisting}[language=C]
+#include <stdio.h>
+int main() {
+    printf("hello world\n");
+    return 0;
+}
+\end{lstlisting}
+\subsection{Assembly (\texttt{hello\_raw.s})}
+\begin{lstlisting}[language={[x86masm]Assembler}]
+    .global _start
+    .extern GetStdHandle
+    .extern WriteFile
+    .extern ExitProcess
+
+    .section .data
+msg:
+    .ascii "Hello World from pure Assembly!\n"
+    .set msg_len, . - msg
+
+    .section .bss
+bytes_written:
+    .space 4
+
+    .section .text
+_start:
+    subq $40, %rsp                 # Shadow space
+    movq $-11, %rcx                # Lay Handle man hinh (API GetStdHandle)
+    call GetStdHandle
+    movq %rax, %rcx                
+    leaq msg(%rip), %rdx           
+    movq $msg_len, %r8             
+    leaq bytes_written(%rip), %r9  
+    movq $0, 32(%rsp)              
+    call WriteFile                 # In ra man hinh
+    movq $0, %rcx
+    call ExitProcess               # Thoat tien trinh an toan
+\end{lstlisting}
+\section{Kết quả đo lường và So sánh}
+
+\subsection{Kích thước File (File Size)}
+\begin{itemize}
+    \item \textbf{Assembly (\texttt{hello\_raw.exe})}: 6,266 bytes ($\sim$6.2 KB)
+    \item \textbf{C (\texttt{hello\_c.exe})}: 122,762 bytes ($\sim$120 KB)
+    \item \textbf{Python (\texttt{hello\_py.exe})}: 7,104,823 bytes ($\sim$7 MB)
+\end{itemize}
+
+\textbf{Nhận xét kích thước:}
+\begin{itemize}
+    \item \textbf{Assembly} dung lượng siêu nhỏ. File \texttt{exe} này không cõng bất cứ đoạn mã thừa hay thư viện C phụ trợ nào mà giao tiếp trực tiếp với hàm cốt lõi của Windows.
+    \item \textbf{C} nặng khoảng 120 KB do sử dụng hàm \texttt{printf}, điều này buộc trình biên dịch phải nhúng thư viện chuẩn C (C Runtime) vào file \texttt{exe}.
+    \item \textbf{Python} có dung lượng khổng lồ (nặng gấp 1,000 lần so với Assembly) vì nó phải chứa máy ảo Python (Interpreter) và các thư viện môi trường để có thể mang đi chạy độc lập.
+\end{itemize}
+
+\subsection{Thời gian chạy (Execution Time)}
+\textit{(Lưu ý: Thời gian được đo bằng mili-giây, cùng thực hiện trên một máy tính Windows).}
+\begin{itemize}
+    \item \textbf{Assembly}: 23.75 ms
+    \item \textbf{C}: 167.75 ms
+    \item \textbf{Python}: 1583.32 ms ($\sim$1.58 giây)
+\end{itemize}
+
+\textbf{Nhận xét tốc độ:}
+\begin{itemize}
+    \item \textbf{Assembly} sở hữu tốc độ khởi tạo và thực thi cực kỳ nhanh. Bởi vì hệ điều hành không tốn thời gian thiết lập môi trường C Runtime, mà lao thẳng vào xử lý mã máy trên CPU.
+    \item \textbf{C} tốn hơn 100ms do cần trải qua các bước thiết lập vòng đời (setup routines / crt0) khi hệ điều hành khởi chạy một tiến trình chuẩn.
+    \item \textbf{Python} tốn tận 1.5 giây chỉ để in ra một dòng chữ đơn giản do hệ điều hành phải giải nén chương trình vào thư mục tạm, nạp trình thông dịch và tải các module cơ bản.
+\end{itemize}
+
+\section{Kết luận}
+\begin{itemize}
+    \item \textbf{Hiệu suất }: Assembly  thể hiện chính xác sức mạnh của nó. Dung lượng vô cùng bé và tốc độ thực thi gần như tức thì. Dù vậy, mã nguồn rất khó bảo trì, dài dòng và bị khóa chặt vào API hệ điều hành Windows (không thể chạy trên Linux hay macOS).
+    \item \textbf{Tốc độ phát triển}: Python vô địch về sự tiện lợi, dễ học và dễ viết. Nó giúp hoàn thiện phần mềm vô cùng nhanh chóng trong các lĩnh vực mà độ trễ một vài phần trăm giây không phải là vấn đề quá khắt khe.
+    \item \textbf{Sự cân bằng}: C có hiệu suất rất gần với Assembly nhưng lại có tính trừu tượng ngôn ngữ tốt hơn, cho phép khả năng lập trình hệ thống quy mô lớn, tính tương thích đa nền tảng (chạy trên bất kỳ hệ điều hành nào).
+\end{itemize}
+
+\end{document}

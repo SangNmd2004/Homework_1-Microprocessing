@@ -1,0 +1,19 @@
+# Executables
+*.exe
+*.o
+
+# Python PyInstaller
+/build/
+/dist/
+*.spec
+__pycache__/
+
+# LaTeX / Tex auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.pdf

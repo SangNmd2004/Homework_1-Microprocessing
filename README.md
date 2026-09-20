@@ -8,6 +8,53 @@ Bài tập này trình bày một chương trình "Hello World" đơn giản đ�
 - `hello_raw.s` : Mã nguồn Assembly x86_64 nguyên thủy (tương tác trực tiếp qua Windows API).
 - `Bao_cao_HelloWorld.tex` : Báo cáo chi tiết định dạng LaTeX.
 
+## Mã nguồn chi tiết
+
+### Python (`hello.py`)
+```python
+print("hello world")
+```
+
+### C (`hello.c`)
+```c
+#include <stdio.h>
+int main() {
+    printf("hello world\n");
+    return 0;
+}
+```
+
+### Assembly Nguyên Thủy (`hello_raw.s`)
+```assembly
+    .global _start
+    .extern GetStdHandle
+    .extern WriteFile
+    .extern ExitProcess
+
+    .section .data
+msg:
+    .ascii "Hello World from pure Assembly!\n"
+    .set msg_len, . - msg
+
+    .section .bss
+bytes_written:
+    .space 4
+
+    .section .text
+_start:
+    subq $40, %rsp
+    movq $-11, %rcx
+    call GetStdHandle
+    movq %rax, %rcx                
+    leaq msg(%rip), %rdx           
+    movq $msg_len, %r8             
+    leaq bytes_written(%rip), %r9  
+    movq $0, 32(%rsp)              
+    call WriteFile
+    movq $0, %rcx
+    call ExitProcess
+```
+
 ## Hướng dẫn biên dịch (Compile)
 
 ### 1. Python
@@ -45,4 +92,4 @@ ld hello_raw.o -o hello_raw.exe -lkernel32 -e _start
 | **C** | ~120 KB | ~167.75 ms | Tốc độ xuất sắc, file lớn hơn do phải nạp thư viện `stdio` chứa hàm `printf`. Mang lại tính cân bằng lý tưởng nhất. |
 | **Python** | ~7 MB | ~1583.32 ms | Siêu to khổng lồ và chậm nhất do file `.exe` phải cõng theo cả một bộ máy ảo Python bên trong để thông dịch mã lệnh. |
 
-> *(Lưu ý: Thời gian chạy mang tính tham khảo và có thể thay đổi tùy thuộc vào cấu hình phần cứng của mỗi máy tính).*
+> *(Lưu ý: Thời gian chạy mang tính tham khảo và được đo đạc bằng lệnh `Measure-Command` trong PowerShell).*
